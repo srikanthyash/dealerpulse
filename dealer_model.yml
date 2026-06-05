@@ -1,0 +1,2493 @@
+# === Auto-updated 2026-06-03 11:41 UTC (integrated) ===
+
+name: dealer_kpi_model
+description: Semantic model for Dealer KPIs - Sales, Performance, Cash Management
+database: dealer_db
+tables:
+- name: vw_gross_profit_margin
+  table: dealer_db.vw_gross_profit_margin
+  description: Monthly gross profit margin and revenue metrics by dealer
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_month
+    type: date
+    role: time_dimension
+    description: First day of the reporting month
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: total_revenue
+    type: double
+    role: fact
+    description: Total revenue for the period
+    synonyms:
+    - revenue
+    - sales
+    - turnover
+  - name: total_cogs
+    type: double
+    role: fact
+    description: Total cost of goods sold
+    synonyms:
+    - cogs
+    - cost of sales
+  - name: gross_profit_margin_pct
+    type: double
+    role: fact
+    description: Gross profit margin as a percentage
+    synonyms:
+    - gross margin
+    - GPM
+    - profit margin
+    - profitability
+  verified_queries:
+  - name: gross_profit_margin_overview
+    description: Gross profit margin for all dealers ordered by dealer and period
+    question_templates:
+    - show gross profit margin
+    - what is the gross profit margin
+    - gross margin by dealer
+    - GPM analysis
+    - profitability by dealer
+    sql: "SELECT dealer_name, period_year, period_month,\n       total_revenue, total_cogs, gross_profit_margin_pct\nFROM\
+      \ dealer_db.vw_gross_profit_margin ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+  - name: gross_profit_margin_with_performance
+    description: Gross profit margin joined with repair turnaround for cross-KPI view
+    question_templates:
+    - compare margin and repair performance
+    - gross margin vs turnaround time
+    sql: "SELECT m.dealer_name, m.period_year, m.period_month,\n       m.gross_profit_margin_pct, t.avg_turnaround_hours\n\
+      FROM dealer_db.vw_gross_profit_margin AS m LEFT JOIN dealer_db.vw_average_repair_turnaround_time AS t\n  ON m.dealer_name\
+      \ = t.dealer_name\n AND m.period_year  = t.period_year\n AND m.period_month = cast(t.period_month as bigint)\nORDER\
+      \ BY m.dealer_name, m.period_year DESC, m.period_month DESC\n"
+- name: vw_dealer_revenue_growth
+  table: dealer_db.vw_dealer_revenue_growth
+  description: Month-over-month revenue growth percentage by dealer
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_month
+    type: date
+    role: time_dimension
+    description: First day of the reporting month
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: revenue
+    type: double
+    role: fact
+    description: Total revenue for the current month
+    synonyms:
+    - current revenue
+    - sales
+  - name: prev_month_revenue
+    type: double
+    role: fact
+    description: Total revenue for the previous month
+    synonyms:
+    - previous revenue
+    - last month revenue
+  - name: revenue_growth_mom_percent
+    type: double
+    role: fact
+    description: Month-over-month revenue growth as a percentage
+    synonyms:
+    - revenue growth
+    - MoM growth
+    - growth rate
+    - trending
+  verified_queries:
+  - name: dealer_revenue_growth_overview
+    description: Revenue and MoM growth for all dealers
+    question_templates:
+    - show revenue growth
+    - which dealers are growing
+    - revenue trending
+    - month over month growth
+    - declining dealers
+    sql: "SELECT dealer_name, period_year, period_month,\n       revenue, prev_month_revenue, revenue_growth_mom_percent\n\
+      FROM dealer_db.vw_dealer_revenue_growth ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+- name: vw_cash_conversion_cycle
+  table: dealer_db.vw_cash_conversion_cycle
+  description: Cash conversion cycle components (DSO, DIO, DPO, CCC) by dealer and period
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_month
+    type: date
+    role: time_dimension
+    description: First day of the reporting month
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: dso
+    type: bigint
+    role: fact
+    description: Days Sales Outstanding - average days to collect receivables
+    synonyms:
+    - days sales outstanding
+    - receivables days
+  - name: dio
+    type: bigint
+    role: fact
+    description: Days Inventory Outstanding - average days inventory is held
+    synonyms:
+    - days inventory outstanding
+    - inventory days
+  - name: dpo
+    type: bigint
+    role: fact
+    description: Days Payable Outstanding - average days to pay suppliers
+    synonyms:
+    - days payable outstanding
+    - payable days
+  - name: ccc
+    type: bigint
+    role: fact
+    description: Cash Conversion Cycle in days (DSO + DIO - DPO)
+    synonyms:
+    - cash conversion cycle
+    - CCC days
+    - working capital cycle
+  verified_queries:
+  - name: cash_conversion_cycle_overview
+    description: Full CCC breakdown for all dealers
+    question_templates:
+    - show cash conversion cycle
+    - what is the CCC
+    - working capital analysis
+    - DSO DIO DPO breakdown
+    - cash management performance
+    sql: "SELECT dealer_name, period_year, period_month,\n       dso, dio, dpo, ccc\nFROM dealer_db.vw_cash_conversion_cycle\
+      \ ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+- name: vw_average_repair_turnaround_time
+  table: dealer_db.vw_average_repair_turnaround_time
+  description: Average service order repair turnaround time in hours by dealer and period
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: timestamp
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: avg_turnaround_hours
+    type: double
+    role: fact
+    description: Average repair turnaround time in hours
+    synonyms:
+    - repair TAT
+    - service turnaround
+    - repair time
+    - service efficiency
+  - name: service_orders_count
+    type: bigint
+    role: fact
+    description: Total number of service orders in the period
+    synonyms:
+    - service orders
+    - repair count
+  verified_queries:
+  - name: average_repair_turnaround_time_overview
+    description: Repair turnaround time for all dealers
+    question_templates:
+    - show repair turnaround time
+    - service efficiency by dealer
+    - average repair TAT
+    - how long does repair take
+    - service performance
+    sql: "SELECT dealer_name, period_year, period_month,\n       avg_turnaround_hours, service_orders_count\nFROM dealer_db.vw_average_repair_turnaround_time\
+      \ ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+- name: vw_dealer_contribution_margin
+  table: dealer_db.vw_dealer_contribution_margin
+  description: Dealer contribution margin after direct and allocated costs
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: date
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: revenue_amt
+    type: double
+    role: fact
+    description: Total revenue amount
+    synonyms:
+    - revenue
+    - sales amount
+  - name: direct_costs_amt
+    type: double
+    role: fact
+    description: Direct costs attributed to the dealer
+    synonyms:
+    - direct costs
+    - variable costs
+  - name: allocated_costs_amt
+    type: double
+    role: fact
+    description: Allocated overhead costs
+    synonyms:
+    - allocated costs
+    - overhead
+  - name: contribution_margin_pct
+    type: double
+    role: fact
+    description: Contribution margin as a percentage of revenue
+    synonyms:
+    - contribution margin
+    - CM
+    - net margin after costs
+  verified_queries:
+  - name: dealer_contribution_margin_overview
+    description: Contribution margin breakdown for all dealers
+    question_templates:
+    - show contribution margin
+    - dealer contribution analysis
+    - net margin by dealer
+    - cost vs revenue breakdown
+    sql: "SELECT dealer_name, period_year, period_month,\n       revenue_amt, direct_costs_amt, allocated_costs_amt, contribution_margin_pct\n\
+      FROM dealer_db.vw_dealer_contribution_margin ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+- name: vw_sales_volume
+  table: dealer_db.vw_sales_volume
+  description: Monthly units sold by dealer
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: date
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: units_sold
+    type: bigint
+    role: fact
+    description: Total units sold in the period
+    synonyms:
+    - units
+    - volume
+    - sales volume
+    - quantity sold
+  verified_queries:
+  - name: sales_volume_overview
+    description: Units sold for all dealers by period
+    question_templates:
+    - show sales volume
+    - units sold by dealer
+    - how many units were sold
+    - volume analysis
+    - sales units
+    sql: 'SELECT dealer_name, period_year, period_month, units_sold FROM dealer_db.vw_sales_volume ORDER BY dealer_name, period_year
+      DESC, period_month DESC
+
+      '
+- name: vw_stock_availability_dealer
+  table: dealer_db.vw_stock_availability_dealer
+  description: Stock availability percentage by dealer and product category
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: product_category
+    type: string
+    role: dimension
+    description: Product category
+    synonyms:
+    - category
+    - product type
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: date
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: on_hand_stock
+    type: double
+    role: fact
+    description: Current on-hand stock quantity
+    synonyms:
+    - stock on hand
+    - available inventory
+  - name: reserved_stock
+    type: double
+    role: fact
+    description: Stock reserved for pending orders
+    synonyms:
+    - reserved
+    - committed stock
+  - name: total_demand
+    type: double
+    role: fact
+    description: Total demand quantity
+    synonyms:
+    - demand
+    - required quantity
+  - name: stock_availability_pct
+    type: double
+    role: fact
+    description: Stock availability as a percentage of demand
+    synonyms:
+    - stock availability
+    - in-stock rate
+    - availability
+  verified_queries:
+  - name: stock_availability_dealer_overview
+    description: Stock availability across all dealers and categories
+    question_templates:
+    - show stock availability
+    - inventory levels by dealer
+    - in-stock rate
+    - stock shortage analysis
+    - availability by category
+    sql: "SELECT dealer_name, product_category, period_year, period_month,\n       on_hand_stock, reserved_stock, total_demand,\
+      \ stock_availability_pct\nFROM dealer_db.vw_stock_availability_dealer ORDER BY dealer_name, product_category, period_year\
+      \ DESC, period_month DESC\n"
+- name: vw_backorder_incidence
+  table: dealer_db.vw_backorder_incidence
+  description: Backorder incidence rate by dealer and period
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: timestamp
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: backorder_incidence_pct
+    type: double
+    role: fact
+    description: Percentage of order items that were backordered
+    synonyms:
+    - backorder rate
+    - backorder percent
+    - shortage rate
+  - name: total_order_items
+    type: bigint
+    role: fact
+    description: Total number of order line items
+    synonyms:
+    - total orders
+    - order count
+  - name: backordered_items
+    type: bigint
+    role: fact
+    description: Number of order items placed on backorder
+    synonyms:
+    - backorders
+    - backordered quantity
+  verified_queries:
+  - name: backorder_incidence_overview
+    description: Backorder incidence for all dealers
+    question_templates:
+    - show backorder rate
+    - backorder incidence by dealer
+    - which dealers have high backorders
+    - backorder analysis
+    - shortage incidence
+    sql: "SELECT dealer_name, period_year, period_month,\n       backorder_incidence_pct, total_order_items, backordered_items\n\
+      FROM dealer_db.vw_backorder_incidence ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+- name: vw_order_lead_time
+  table: dealer_db.vw_order_lead_time
+  description: Average order lead time in days by dealer and period
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: date
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: avg_order_lead_time_days
+    type: double
+    role: fact
+    description: Average days from order placement to delivery
+    synonyms:
+    - lead time
+    - order lead time
+    - delivery time
+    - fulfillment time
+  - name: orders_count
+    type: bigint
+    role: fact
+    description: Number of orders in the period
+    synonyms:
+    - order count
+    - total orders
+  verified_queries:
+  - name: order_lead_time_overview
+    description: Average order lead time for all dealers
+    question_templates:
+    - show order lead time
+    - delivery performance by dealer
+    - average lead time
+    - fulfillment speed
+    - how long does delivery take
+    sql: "SELECT dealer_name, period_year, period_month,\n       avg_order_lead_time_days, orders_count\nFROM dealer_db.vw_order_lead_time\
+      \ ORDER BY dealer_name, period_year DESC, period_month DESC\n"
+- name: vw_sales_per_product_category
+  table: dealer_db.vw_sales_per_product_category
+  description: Revenue and quantity sold broken down by dealer and product category
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: product_category
+    type: string
+    role: dimension
+    description: Product category
+    synonyms:
+    - category
+    - product type
+    - segment
+  - name: period_year
+    type: bigint
+    role: time_dimension
+    description: Year of the reporting period
+  - name: period_month
+    type: bigint
+    role: time_dimension
+    description: Month number of the reporting period
+  - name: period_start_date
+    type: date
+    role: time_dimension
+    description: Start date of the reporting period
+  - name: total_revenue
+    type: double
+    role: fact
+    description: Total revenue for the dealer and category
+    synonyms:
+    - revenue
+    - category revenue
+    - product revenue
+  - name: total_quantity
+    type: double
+    role: fact
+    description: Total quantity sold for the dealer and category
+    synonyms:
+    - quantity
+    - units
+    - volume
+    - category volume
+  verified_queries:
+  - name: sales_per_product_category_overview
+    description: Sales revenue and quantity by dealer and product category
+    question_templates:
+    - show sales by category
+    - product category performance
+    - revenue by product type
+    - which category sells most
+    - category breakdown
+    sql: "SELECT dealer_name, product_category, period_year, period_month,\n       total_revenue, total_quantity\nFROM dealer_db.vw_sales_per_product_category\
+      \ ORDER BY dealer_name, product_category, period_year DESC, period_month DESC\n"
+- name: vw_dealer_journey_counts
+  table: dealer_db.vw_dealer_journey_counts
+  description: Transaction journey stage counts per dealer per day (order, delivery, invoice, paid, warranty)
+  columns:
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: order_date
+    type: date
+    role: time_dimension
+    description: Date of the order
+  - name: total_orders
+    type: bigint
+    role: fact
+    description: Total orders placed on this date
+    synonyms:
+    - orders
+    - order count
+  - name: order_count
+    type: bigint
+    role: fact
+    description: Count of orders in order stage
+  - name: delivery_count
+    type: bigint
+    role: fact
+    description: Count of orders that reached delivery stage
+    synonyms:
+    - deliveries
+    - delivered orders
+  - name: invoice_count
+    type: bigint
+    role: fact
+    description: Count of orders that reached invoice stage
+    synonyms:
+    - invoices
+    - invoiced orders
+  - name: paid_count
+    type: bigint
+    role: fact
+    description: Count of orders that were paid
+    synonyms:
+    - paid
+    - payments received
+  - name: warranty_count
+    type: bigint
+    role: fact
+    description: Count of orders with warranty
+    synonyms:
+    - warranties
+    - warranty orders
+  - name: avg_lead_time_days
+    type: double
+    role: fact
+    description: Average lead time in days for orders on this date
+    synonyms:
+    - lead time
+    - delivery speed
+  - name: active_warranty_count
+    type: bigint
+    role: fact
+    description: Count of currently active warranties
+    synonyms:
+    - active warranties
+  - name: expired_warranty_count
+    type: bigint
+    role: fact
+    description: Count of expired warranties
+    synonyms:
+    - expired warranties
+  verified_queries:
+  - name: dealer_journey_counts_overview
+    description: Transaction journey funnel counts by dealer
+    question_templates:
+    - show transaction journey
+    - order to delivery funnel
+    - journey stage counts
+    - order pipeline by dealer
+    - warranty counts
+    sql: "SELECT dealer_name, order_date, total_orders, order_count,\n       delivery_count, invoice_count, paid_count,\n\
+      \       warranty_count, avg_lead_time_days,\n       active_warranty_count, expired_warranty_count\nFROM dealer_db.vw_dealer_journey_counts\
+      \ ORDER BY dealer_name, order_date DESC\n"
+- name: vw_transaction_lineage
+  table: dealer_db.vw_transaction_lineage
+  description: Full transaction lineage from order through delivery, invoice, payment, and warranty
+  columns:
+  - name: transaction_id
+    type: string
+    role: dimension
+    description: Unique transaction identifier
+    synonyms:
+    - transaction
+    - order ID
+    - tx ID
+  - name: order_date
+    type: date
+    role: time_dimension
+    description: Date the order was placed
+  - name: dealer_name
+    type: string
+    role: dimension
+    description: Name of the dealer
+    synonyms:
+    - dealer
+    - distributor name
+  - name: product_category
+    type: string
+    role: dimension
+    description: Product category of the order
+    synonyms:
+    - category
+    - product type
+  - name: product_desc
+    type: string
+    role: dimension
+    description: Product description
+    synonyms:
+    - product
+    - item description
+  - name: order_flag
+    type: string
+    role: dimension
+    description: Flag indicating order stage (Y/N)
+  - name: delivery_date
+    type: date
+    role: time_dimension
+    description: Date of delivery
+  - name: delivery_flag
+    type: string
+    role: dimension
+    description: Flag indicating delivery completion (Y/N)
+  - name: lead_time_days
+    type: bigint
+    role: fact
+    description: Days from order to delivery
+    synonyms:
+    - lead time
+    - delivery days
+  - name: invoice_date
+    type: date
+    role: time_dimension
+    description: Date the invoice was raised
+  - name: invoice_flag
+    type: string
+    role: dimension
+    description: Flag indicating invoice stage (Y/N)
+  - name: payment_date
+    type: date
+    role: time_dimension
+    description: Date payment was received
+  - name: paid_flag
+    type: string
+    role: dimension
+    description: Flag indicating payment received (Y/N)
+  - name: invoice_amount
+    type: double
+    role: fact
+    description: Invoice amount in currency
+    synonyms:
+    - amount
+    - invoice value
+    - transaction value
+  - name: invoice_status
+    type: string
+    role: dimension
+    description: Current invoice status
+    synonyms:
+    - status
+    - payment status
+  - name: warranty_flag
+    type: string
+    role: dimension
+    description: Flag indicating warranty exists (Y/N)
+  - name: warranty_end_date
+    type: date
+    role: time_dimension
+    description: End date of the warranty
+  - name: warranty_status
+    type: string
+    role: dimension
+    description: Current warranty status (Active/Expired)
+    synonyms:
+    - warranty
+    - warranty state
+  verified_queries:
+  - name: transaction_lineage_overview
+    description: Full transaction lineage for all dealers
+    question_templates:
+    - show transaction lineage
+    - order to payment tracking
+    - full transaction history
+    - invoice and payment status
+    - warranty tracking
+    sql: "SELECT transaction_id, order_date, dealer_name, product_category,\n       product_desc, order_flag, delivery_date,\
+      \ delivery_flag,\n       lead_time_days, invoice_date, invoice_flag,\n       payment_date, paid_flag, invoice_amount,\n\
+      \       invoice_status, warranty_flag, warranty_end_date, warranty_status\nFROM dealer_db.vw_transaction_lineage ORDER\
+      \ BY dealer_name, order_date DESC\n"
+- name: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+  description: 'Average Repair Turnaround Time — columns: DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, AVG_TURNAROUND_HOURS,
+    SERVICE_ORDERS_COUNT'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: &id001
+    - dealer
+    - distributor name
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: AVG_TURNAROUND_HOURS
+    expr: AVG_TURNAROUND_HOURS
+    description: Avg Turnaround Hours
+    label: Avg Turnaround Hours
+    synonyms:
+    - repair TAT
+    - service turnaround
+    default_aggregation: sum
+  - name: SERVICE_ORDERS_COUNT
+    expr: SERVICE_ORDERS_COUNT
+    description: Service Orders Count
+    label: Service Orders Count
+    default_aggregation: sum
+- name: VW_BACKORDER_INCIDENCE
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_BACKORDER_INCIDENCE
+  description: 'Backorder Incidence — columns: DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, BACKORDER_INCIDENCE_PCT,
+    TOTAL_ORDER_ITEMS, BACKORDERED_ITEMS'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: BACKORDER_INCIDENCE_PCT
+    expr: BACKORDER_INCIDENCE_PCT
+    description: Backorder Incidence Pct
+    label: Backorder Incidence Pct
+    synonyms:
+    - backorder rate
+    default_aggregation: avg
+  - name: TOTAL_ORDER_ITEMS
+    expr: TOTAL_ORDER_ITEMS
+    description: Total Order Items
+    label: Total Order Items
+    default_aggregation: sum
+  - name: BACKORDERED_ITEMS
+    expr: BACKORDERED_ITEMS
+    description: Backordered Items
+    label: Backordered Items
+    default_aggregation: sum
+- name: VW_CASH_CONVERSION_CYCLE
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_CASH_CONVERSION_CYCLE
+  description: 'Cash Conversion Cycle — columns: DEALER_NAME, PERIOD_MONTH, PERIOD_YEAR, DSO, DIO, DPO, CCC'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  facts:
+  - name: DSO
+    expr: DSO
+    description: Dso
+    label: Dso
+    synonyms:
+    - days sales outstanding
+    default_aggregation: sum
+  - name: DIO
+    expr: DIO
+    description: Dio
+    label: Dio
+    synonyms:
+    - days inventory outstanding
+    default_aggregation: sum
+  - name: DPO
+    expr: DPO
+    description: Dpo
+    label: Dpo
+    synonyms:
+    - days payable outstanding
+    default_aggregation: sum
+  - name: CCC
+    expr: CCC
+    description: Ccc
+    label: Ccc
+    synonyms:
+    - cash conversion cycle
+    - CCC days
+    default_aggregation: sum
+- name: VW_DEALER_CONTRIBUTION_MARGIN
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_DEALER_CONTRIBUTION_MARGIN
+  description: 'Dealer Contribution Margin — columns: DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, REVENUE_AMT,
+    DIRECT_COSTS_AMT, ALLOCATED_COSTS_AMT, CONTRIBUTION_MARGIN_PCT'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: REVENUE_AMT
+    expr: REVENUE_AMT
+    description: Revenue Amt
+    label: Revenue Amt
+    default_aggregation: sum
+  - name: DIRECT_COSTS_AMT
+    expr: DIRECT_COSTS_AMT
+    description: Direct Costs Amt
+    label: Direct Costs Amt
+    default_aggregation: sum
+  - name: ALLOCATED_COSTS_AMT
+    expr: ALLOCATED_COSTS_AMT
+    description: Allocated Costs Amt
+    label: Allocated Costs Amt
+    default_aggregation: sum
+  - name: CONTRIBUTION_MARGIN_PCT
+    expr: CONTRIBUTION_MARGIN_PCT
+    description: Contribution Margin Pct
+    label: Contribution Margin Pct
+    default_aggregation: avg
+- name: VW_DEALER_JOURNEY_COUNTS
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_DEALER_JOURNEY_COUNTS
+  description: 'Dealer Journey Counts — columns: DEALER_NAME, ORDER_DATE, TOTAL_ORDERS, ORDER_COUNT, DELIVERY_COUNT, INVOICE_COUNT,
+    PAID_COUNT, WARRANTY_COUNT…'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: ORDER_DATE
+    expr: ORDER_DATE
+    description: Order Date
+    label: Order Date
+    time_granularity: day
+  facts:
+  - name: TOTAL_ORDERS
+    expr: TOTAL_ORDERS
+    description: Total Orders
+    label: Total Orders
+    default_aggregation: sum
+  - name: ORDER_COUNT
+    expr: ORDER_COUNT
+    description: Order Count
+    label: Order Count
+    default_aggregation: sum
+  - name: DELIVERY_COUNT
+    expr: DELIVERY_COUNT
+    description: Delivery Count
+    label: Delivery Count
+    default_aggregation: sum
+  - name: INVOICE_COUNT
+    expr: INVOICE_COUNT
+    description: Invoice Count
+    label: Invoice Count
+    default_aggregation: sum
+  - name: PAID_COUNT
+    expr: PAID_COUNT
+    description: Paid Count
+    label: Paid Count
+    default_aggregation: sum
+  - name: WARRANTY_COUNT
+    expr: WARRANTY_COUNT
+    description: Warranty Count
+    label: Warranty Count
+    default_aggregation: sum
+  - name: AVG_LEAD_TIME_DAYS
+    expr: AVG_LEAD_TIME_DAYS
+    description: Avg Lead Time Days
+    label: Avg Lead Time Days
+    default_aggregation: sum
+  - name: ACTIVE_WARRANTY_COUNT
+    expr: ACTIVE_WARRANTY_COUNT
+    description: Active Warranty Count
+    label: Active Warranty Count
+    default_aggregation: sum
+  - name: EXPIRED_WARRANTY_COUNT
+    expr: EXPIRED_WARRANTY_COUNT
+    description: Expired Warranty Count
+    label: Expired Warranty Count
+    default_aggregation: sum
+- name: VW_DEALER_REVENUE_GROWTH
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_DEALER_REVENUE_GROWTH
+  description: 'Dealer Revenue Growth — columns: DEALER_NAME, PERIOD_MONTH, PERIOD_YEAR, REVENUE, PREV_MONTH_REVENUE, REVENUE_GROWTH_MOM_PERCENT'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  facts:
+  - name: REVENUE
+    expr: REVENUE
+    description: Revenue
+    label: Revenue
+    default_aggregation: sum
+  - name: PREV_MONTH_REVENUE
+    expr: PREV_MONTH_REVENUE
+    description: Prev Month Revenue
+    label: Prev Month Revenue
+    default_aggregation: sum
+  - name: REVENUE_GROWTH_MOM_PERCENT
+    expr: REVENUE_GROWTH_MOM_PERCENT
+    description: Revenue Growth Mom Percent
+    label: Revenue Growth Mom Percent
+    synonyms:
+    - revenue growth
+    - MoM growth
+    default_aggregation: avg
+- name: VW_GROSS_PROFIT_MARGIN
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_GROSS_PROFIT_MARGIN
+  description: 'Gross Profit Margin — columns: DEALER_NAME, PERIOD_MONTH, PERIOD_YEAR, TOTAL_REVENUE, TOTAL_COGS, GROSS_PROFIT_MARGIN_PCT'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  facts:
+  - name: TOTAL_REVENUE
+    expr: TOTAL_REVENUE
+    description: Total Revenue
+    label: Total Revenue
+    default_aggregation: sum
+  - name: TOTAL_COGS
+    expr: TOTAL_COGS
+    description: Total Cogs
+    label: Total Cogs
+    default_aggregation: sum
+  - name: GROSS_PROFIT_MARGIN_PCT
+    expr: GROSS_PROFIT_MARGIN_PCT
+    description: Gross Profit Margin Pct
+    label: Gross Profit Margin Pct
+    synonyms:
+    - gross margin
+    - GPM
+    default_aggregation: avg
+- name: VW_ORDER_LEAD_TIME
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_ORDER_LEAD_TIME
+  description: 'Order Lead Time — columns: DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, AVG_ORDER_LEAD_TIME_DAYS,
+    ORDERS_COUNT'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: AVG_ORDER_LEAD_TIME_DAYS
+    expr: AVG_ORDER_LEAD_TIME_DAYS
+    description: Avg Order Lead Time Days
+    label: Avg Order Lead Time Days
+    synonyms:
+    - lead time
+    - order lead time
+    default_aggregation: sum
+  - name: ORDERS_COUNT
+    expr: ORDERS_COUNT
+    description: Orders Count
+    label: Orders Count
+    default_aggregation: sum
+- name: VW_SALES_PER_PRODUCT_CATEGORY
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_SALES_PER_PRODUCT_CATEGORY
+  description: 'Sales Per Product Category — columns: DEALER_NAME, PRODUCT_CATEGORY, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE,
+    TOTAL_REVENUE, TOTAL_QUANTITY'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  - name: PRODUCT_CATEGORY
+    expr: PRODUCT_CATEGORY
+    description: Product Category
+    label: Product Category
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: TOTAL_REVENUE
+    expr: TOTAL_REVENUE
+    description: Total Revenue
+    label: Total Revenue
+    default_aggregation: sum
+  - name: TOTAL_QUANTITY
+    expr: TOTAL_QUANTITY
+    description: Total Quantity
+    label: Total Quantity
+    default_aggregation: sum
+- name: VW_SALES_VOLUME
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_SALES_VOLUME
+  description: 'Sales Volume — columns: DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, UNITS_SOLD'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: UNITS_SOLD
+    expr: UNITS_SOLD
+    description: Units Sold
+    label: Units Sold
+    default_aggregation: sum
+- name: VW_STOCK_AVAILABILITY_DEALER
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_STOCK_AVAILABILITY_DEALER
+  description: 'Stock Availability Dealer — columns: DEALER_NAME, PRODUCT_CATEGORY, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE,
+    ON_HAND_STOCK, RESERVED_STOCK, TOTAL_DEMAND…'
+  dimensions:
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  - name: PRODUCT_CATEGORY
+    expr: PRODUCT_CATEGORY
+    description: Product Category
+    label: Product Category
+  time_dimensions:
+  - name: PERIOD_YEAR
+    expr: PERIOD_YEAR
+    description: Period Year
+    label: Period Year
+    time_granularity: year
+  - name: PERIOD_MONTH
+    expr: PERIOD_MONTH
+    description: Period Month
+    label: Period Month
+    time_granularity: month
+  - name: PERIOD_START_DATE
+    expr: PERIOD_START_DATE
+    description: Period Start Date
+    label: Period Start Date
+    time_granularity: day
+  facts:
+  - name: ON_HAND_STOCK
+    expr: ON_HAND_STOCK
+    description: On Hand Stock
+    label: On Hand Stock
+    default_aggregation: sum
+  - name: RESERVED_STOCK
+    expr: RESERVED_STOCK
+    description: Reserved Stock
+    label: Reserved Stock
+    default_aggregation: sum
+  - name: TOTAL_DEMAND
+    expr: TOTAL_DEMAND
+    description: Total Demand
+    label: Total Demand
+    default_aggregation: sum
+  - name: STOCK_AVAILABILITY_PCT
+    expr: STOCK_AVAILABILITY_PCT
+    description: Stock Availability Pct
+    label: Stock Availability Pct
+    synonyms:
+    - stock availability
+    - in-stock rate
+    default_aggregation: avg
+- name: VW_TRANSACTION_LINEAGE
+  base_table:
+    database: dealer_db
+    schema: dealer_db
+    table: VW_TRANSACTION_LINEAGE
+  description: 'Transaction Lineage — columns: TRANSACTION_ID, ORDER_DATE, DEALER_NAME, PRODUCT_CATEGORY, PRODUCT_DESC, ORDER_FLAG,
+    DELIVERY_DATE, DELIVERY_FLAG…'
+  dimensions:
+  - name: TRANSACTION_ID
+    expr: TRANSACTION_ID
+    description: Transaction Id
+    label: Transaction Id
+  - name: DEALER_NAME
+    expr: DEALER_NAME
+    description: Dealer Name
+    label: Dealer Name
+    synonyms: *id001
+  - name: PRODUCT_CATEGORY
+    expr: PRODUCT_CATEGORY
+    description: Product Category
+    label: Product Category
+  - name: PRODUCT_DESC
+    expr: PRODUCT_DESC
+    description: Product Desc
+    label: Product Desc
+  - name: ORDER_FLAG
+    expr: ORDER_FLAG
+    description: Order Flag
+    label: Order Flag
+  - name: DELIVERY_FLAG
+    expr: DELIVERY_FLAG
+    description: Delivery Flag
+    label: Delivery Flag
+  - name: INVOICE_FLAG
+    expr: INVOICE_FLAG
+    description: Invoice Flag
+    label: Invoice Flag
+  - name: PAID_FLAG
+    expr: PAID_FLAG
+    description: Paid Flag
+    label: Paid Flag
+  - name: INVOICE_STATUS
+    expr: INVOICE_STATUS
+    description: Invoice Status
+    label: Invoice Status
+  - name: WARRANTY_FLAG
+    expr: WARRANTY_FLAG
+    description: Warranty Flag
+    label: Warranty Flag
+  - name: WARRANTY_STATUS
+    expr: WARRANTY_STATUS
+    description: Warranty Status
+    label: Warranty Status
+  time_dimensions:
+  - name: ORDER_DATE
+    expr: ORDER_DATE
+    description: Order Date
+    label: Order Date
+    time_granularity: day
+  - name: DELIVERY_DATE
+    expr: DELIVERY_DATE
+    description: Delivery Date
+    label: Delivery Date
+    time_granularity: day
+  - name: INVOICE_DATE
+    expr: INVOICE_DATE
+    description: Invoice Date
+    label: Invoice Date
+    time_granularity: day
+  - name: PAYMENT_DATE
+    expr: PAYMENT_DATE
+    description: Payment Date
+    label: Payment Date
+    time_granularity: day
+  - name: WARRANTY_END_DATE
+    expr: WARRANTY_END_DATE
+    description: Warranty End Date
+    label: Warranty End Date
+    time_granularity: day
+  facts:
+  - name: LEAD_TIME_DAYS
+    expr: LEAD_TIME_DAYS
+    description: Lead Time Days
+    label: Lead Time Days
+    default_aggregation: sum
+  - name: INVOICE_AMOUNT
+    expr: INVOICE_AMOUNT
+    description: Invoice Amount
+    label: Invoice Amount
+    default_aggregation: sum
+keyword_tables:
+  margin|profit|profitability|cogs|gross|gpm:
+  - vw_gross_profit_margin
+  - vw_dealer_contribution_margin
+  growth|revenue|trending|declining:
+  - vw_dealer_revenue_growth
+  - vw_gross_profit_margin
+  cash|ccc|working capital|dso|dio|dpo:
+  - vw_cash_conversion_cycle
+  service|repair|turnaround|efficiency|tat:
+  - vw_average_repair_turnaround_time
+  inventory|stock|backorder|availability|shortage:
+  - vw_stock_availability_dealer
+  - vw_backorder_incidence
+  lead time|delivery|fulfillment|order:
+  - vw_order_lead_time
+  unit|volume|sold|sales:
+  - vw_sales_volume
+  - vw_sales_per_product_category
+  category|product|segment:
+  - vw_sales_per_product_category
+  - vw_stock_availability_dealer
+  journey|funnel|pipeline|warranty:
+  - vw_dealer_journey_counts
+  transaction|lineage|invoice|payment:
+  - vw_transaction_lineage
+  cost|expense|spending|contribution:
+  - vw_dealer_contribution_margin
+  - vw_gross_profit_margin
+entity_patterns:
+  dealer_name:
+    pattern: (?:dealer|distributor)\s+([A-Za-z0-9\s]+?)(?:\s+performance|\s+data|\s+metrics|$)
+    synonyms:
+    - dealer
+    - distributor
+  period_year:
+    pattern: (?:year|fy|fiscal)\s*(20\d{2})
+    synonyms:
+    - year
+    - fiscal year
+  period_month:
+    pattern: (?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)
+    synonyms:
+    - month
+    - period
+  product_category:
+    pattern: (?:category|product type)\s+([A-Za-z0-9\s]+?)(?:\s+sales|\s+stock|$)
+    synonyms:
+    - category
+    - product type
+    - segment
+bedrock_training_patterns:
+- intent: gross_profit_margin
+  description: Questions about gross profit margin, GPM, profitability
+  keywords:
+  - margin
+  - profit
+  - gpm
+  - gross
+  - profitability
+  - cogs
+  tables:
+  - vw_gross_profit_margin
+  verified_query: gross_profit_margin_overview
+- intent: revenue_growth
+  description: Questions about revenue growth, MoM trends, declining dealers
+  keywords:
+  - growth
+  - revenue
+  - trending
+  - declining
+  - mom
+  - month over month
+  tables:
+  - vw_dealer_revenue_growth
+  verified_query: dealer_revenue_growth_overview
+- intent: cash_conversion_cycle
+  description: Questions about CCC, DSO, DIO, DPO, working capital
+  keywords:
+  - ccc
+  - dso
+  - dio
+  - dpo
+  - cash
+  - working capital
+  - conversion cycle
+  tables:
+  - vw_cash_conversion_cycle
+  verified_query: cash_conversion_cycle_overview
+- intent: repair_turnaround
+  description: Questions about service repair time, TAT, service efficiency
+  keywords:
+  - repair
+  - turnaround
+  - tat
+  - service
+  - service orders
+  - efficiency
+  tables:
+  - vw_average_repair_turnaround_time
+  verified_query: average_repair_turnaround_time_overview
+- intent: contribution_margin
+  description: Questions about contribution margin, direct costs, allocated costs
+  keywords:
+  - contribution margin
+  - cm
+  - direct cost
+  - allocated cost
+  - net margin
+  tables:
+  - vw_dealer_contribution_margin
+  verified_query: dealer_contribution_margin_overview
+- intent: sales_volume
+  description: Questions about units sold, sales volume
+  keywords:
+  - units
+  - volume
+  - sold
+  - sales volume
+  - quantity sold
+  tables:
+  - vw_sales_volume
+  verified_query: sales_volume_overview
+- intent: stock_availability
+  description: Questions about stock availability, inventory levels, in-stock rate
+  keywords:
+  - stock
+  - availability
+  - inventory
+  - in-stock
+  - on hand
+  tables:
+  - vw_stock_availability_dealer
+  verified_query: stock_availability_dealer_overview
+- intent: backorder_incidence
+  description: Questions about backorder rate, shortage incidence
+  keywords:
+  - backorder
+  - shortage
+  - backorder rate
+  - backordered
+  tables:
+  - vw_backorder_incidence
+  verified_query: backorder_incidence_overview
+- intent: order_lead_time
+  description: Questions about order lead time, delivery speed, fulfillment
+  keywords:
+  - lead time
+  - delivery
+  - fulfillment
+  - order lead time
+  tables:
+  - vw_order_lead_time
+  verified_query: order_lead_time_overview
+- intent: sales_by_category
+  description: Questions about sales by product category, category revenue
+  keywords:
+  - category
+  - product
+  - segment
+  - category sales
+  - product revenue
+  tables:
+  - vw_sales_per_product_category
+  verified_query: sales_per_product_category_overview
+- intent: dealer_journey
+  description: Questions about transaction journey, funnel, pipeline, warranty
+  keywords:
+  - journey
+  - funnel
+  - pipeline
+  - warranty
+  - order stages
+  tables:
+  - vw_dealer_journey_counts
+  verified_query: dealer_journey_counts_overview
+- intent: transaction_lineage
+  description: Questions about transaction lineage, invoice status, payment tracking
+  keywords:
+  - transaction
+  - lineage
+  - invoice
+  - payment
+  - order tracking
+  tables:
+  - vw_transaction_lineage
+  verified_query: transaction_lineage_overview
+synonym_map:
+  dealer_name:
+  - dealer
+  - distributor name
+  gross_profit_margin_pct:
+  - gross margin
+  - GPM
+  revenue_growth_mom_percent:
+  - revenue growth
+  - MoM growth
+  avg_turnaround_hours:
+  - repair TAT
+  - service turnaround
+  avg_order_lead_time_days:
+  - lead time
+  - order lead time
+  stock_availability_pct:
+  - stock availability
+  - in-stock rate
+  backorder_incidence_pct:
+  - backorder rate
+  ccc:
+  - cash conversion cycle
+  - CCC days
+  dso:
+  - days sales outstanding
+  dio:
+  - days inventory outstanding
+  dpo:
+  - days payable outstanding
+  contribution_margin_pct:
+  - contribution margin
+  - CM
+  units_sold:
+  - units
+  - volume
+  - quantity sold
+  total_revenue:
+  - revenue
+  - sales
+  - turnover
+verified_queries:
+- name: average_repair_turnaround_time_overview
+  question: Show me average repair turnaround time. Where are my average repair turnaround time? Average Repair Turnaround
+    Time overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.AVG_TURNAROUND_HOURS), 2) AS AVG_TURNAROUND_HOURS,\n  ROUND(SUM(dl.SERVICE_ORDERS_COUNT),\
+    \ 2) AS SERVICE_ORDERS_COUNT\nFROM dealer_db.dealer_db.VW_AVERAGE_REPAIR_TURNAROUND_TIME dl\nGROUP BY dl.DEALER_NAME\n\
+    ORDER BY dl.DEALER_NAME;"
+- name: average_repair_turnaround_time_with_performance
+  question: Show Average Repair Turnaround Time with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.AVG_TURNAROUND_HOURS), 2) AS AVG_TURNAROUND_HOURS,\n\
+    \    ROUND(SUM(dl.SERVICE_ORDERS_COUNT), 2) AS SERVICE_ORDERS_COUNT,\n  FROM dealer_db.dealer_db.VW_AVERAGE_REPAIR_TURNAROUND_TIME\
+    \ dl\n  GROUP BY dl.DEALER_NAME\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n\
+    \    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n\
+    )\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\n\
+    LEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: backorder_incidence_overview
+  question: Show me backorder incidence. Where are my backorder incidence? Backorder Incidence overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(AVG(dl.BACKORDER_INCIDENCE_PCT), 2) AS BACKORDER_INCIDENCE_PCT,\n  ROUND(SUM(dl.TOTAL_ORDER_ITEMS),\
+    \ 2) AS TOTAL_ORDER_ITEMS,\n  ROUND(SUM(dl.BACKORDERED_ITEMS), 2) AS BACKORDERED_ITEMS\nFROM dealer_db.dealer_db.VW_BACKORDER_INCIDENCE\
+    \ dl\nGROUP BY dl.DEALER_NAME\nORDER BY dl.DEALER_NAME;"
+- name: backorder_incidence_with_performance
+  question: Show Backorder Incidence with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(AVG(dl.BACKORDER_INCIDENCE_PCT), 2) AS BACKORDER_INCIDENCE_PCT,\n\
+    \    ROUND(SUM(dl.TOTAL_ORDER_ITEMS), 2) AS TOTAL_ORDER_ITEMS,\n    ROUND(SUM(dl.BACKORDERED_ITEMS), 2) AS BACKORDERED_ITEMS,\n\
+    \  FROM dealer_db.dealer_db.VW_BACKORDER_INCIDENCE dl\n  GROUP BY dl.DEALER_NAME\n),\nperf AS (\n  SELECT DEALER_NAME,\n\
+    \    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n\
+    \  GROUP BY DEALER_NAME\n)\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\n\
+    FROM base b\nLEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: cash_conversion_cycle_overview
+  question: Show me cash conversion cycle. Where are my cash conversion cycle? Cash Conversion Cycle overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.DSO), 2) AS DSO,\n  ROUND(SUM(dl.DIO), 2) AS DIO,\n  ROUND(SUM(dl.DPO),\
+    \ 2) AS DPO,\n  ROUND(SUM(dl.CCC), 2) AS CCC\nFROM dealer_db.dealer_db.VW_CASH_CONVERSION_CYCLE dl\nGROUP BY dl.DEALER_NAME\n\
+    ORDER BY dl.DEALER_NAME;"
+- name: cash_conversion_cycle_with_performance
+  question: Show Cash Conversion Cycle with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.DSO), 2) AS DSO,\n    ROUND(SUM(dl.DIO), 2) AS DIO,\n\
+    \    ROUND(SUM(dl.DPO), 2) AS DPO,\n    ROUND(SUM(dl.CCC), 2) AS CCC,\n  FROM dealer_db.dealer_db.VW_CASH_CONVERSION_CYCLE\
+    \ dl\n  GROUP BY dl.DEALER_NAME\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n\
+    \    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n\
+    )\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\n\
+    LEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: dealer_contribution_margin_overview
+  question: Show me dealer contribution margin. Where are my dealer contribution margin? Dealer Contribution Margin overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.REVENUE_AMT), 2) AS REVENUE_AMT,\n  ROUND(SUM(dl.DIRECT_COSTS_AMT), 2) AS\
+    \ DIRECT_COSTS_AMT,\n  ROUND(SUM(dl.ALLOCATED_COSTS_AMT), 2) AS ALLOCATED_COSTS_AMT,\n  ROUND(AVG(dl.CONTRIBUTION_MARGIN_PCT),\
+    \ 2) AS CONTRIBUTION_MARGIN_PCT\nFROM dealer_db.dealer_db.VW_DEALER_CONTRIBUTION_MARGIN dl\nGROUP BY dl.DEALER_NAME\n\
+    ORDER BY dl.DEALER_NAME;"
+- name: dealer_contribution_margin_with_performance
+  question: Show Dealer Contribution Margin with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.REVENUE_AMT), 2) AS REVENUE_AMT,\n    ROUND(SUM(dl.DIRECT_COSTS_AMT),\
+    \ 2) AS DIRECT_COSTS_AMT,\n    ROUND(SUM(dl.ALLOCATED_COSTS_AMT), 2) AS ALLOCATED_COSTS_AMT,\n    ROUND(AVG(dl.CONTRIBUTION_MARGIN_PCT),\
+    \ 2) AS CONTRIBUTION_MARGIN_PCT,\n  FROM dealer_db.dealer_db.VW_DEALER_CONTRIBUTION_MARGIN dl\n  GROUP BY dl.DEALER_NAME\n\
+    ),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n    SUM(TOTAL_REVENUE) AS total_revenue\n\
+    \  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n)\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct,\
+    \ ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\nLEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY\
+    \ p.total_revenue DESC NULLS LAST;"
+- name: dealer_journey_counts_overview
+  question: Show me dealer journey counts. Where are my dealer journey counts? Dealer Journey Counts overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.TOTAL_ORDERS), 2) AS TOTAL_ORDERS,\n  ROUND(SUM(dl.ORDER_COUNT), 2) AS ORDER_COUNT,\n\
+    \  ROUND(SUM(dl.DELIVERY_COUNT), 2) AS DELIVERY_COUNT,\n  ROUND(SUM(dl.INVOICE_COUNT), 2) AS INVOICE_COUNT,\n  ROUND(SUM(dl.PAID_COUNT),\
+    \ 2) AS PAID_COUNT,\n  ROUND(SUM(dl.WARRANTY_COUNT), 2) AS WARRANTY_COUNT,\n  ROUND(SUM(dl.AVG_LEAD_TIME_DAYS), 2) AS\
+    \ AVG_LEAD_TIME_DAYS,\n  ROUND(SUM(dl.ACTIVE_WARRANTY_COUNT), 2) AS ACTIVE_WARRANTY_COUNT,\n  ROUND(SUM(dl.EXPIRED_WARRANTY_COUNT),\
+    \ 2) AS EXPIRED_WARRANTY_COUNT\nFROM dealer_db.dealer_db.VW_DEALER_JOURNEY_COUNTS dl\nGROUP BY dl.DEALER_NAME\nORDER BY\
+    \ dl.DEALER_NAME;"
+- name: dealer_journey_counts_with_performance
+  question: Show Dealer Journey Counts with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.TOTAL_ORDERS), 2) AS TOTAL_ORDERS,\n    ROUND(SUM(dl.ORDER_COUNT),\
+    \ 2) AS ORDER_COUNT,\n    ROUND(SUM(dl.DELIVERY_COUNT), 2) AS DELIVERY_COUNT,\n    ROUND(SUM(dl.INVOICE_COUNT), 2) AS\
+    \ INVOICE_COUNT,\n    ROUND(SUM(dl.PAID_COUNT), 2) AS PAID_COUNT,\n    ROUND(SUM(dl.WARRANTY_COUNT), 2) AS WARRANTY_COUNT,\n\
+    \    ROUND(SUM(dl.AVG_LEAD_TIME_DAYS), 2) AS AVG_LEAD_TIME_DAYS,\n    ROUND(SUM(dl.ACTIVE_WARRANTY_COUNT), 2) AS ACTIVE_WARRANTY_COUNT,\n\
+    \    ROUND(SUM(dl.EXPIRED_WARRANTY_COUNT), 2) AS EXPIRED_WARRANTY_COUNT,\n  FROM dealer_db.dealer_db.VW_DEALER_JOURNEY_COUNTS\
+    \ dl\n  GROUP BY dl.DEALER_NAME\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n\
+    \    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n\
+    )\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\n\
+    LEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: dealer_revenue_growth_overview
+  question: Show me dealer revenue growth. Where are my dealer revenue growth? Dealer Revenue Growth overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.REVENUE), 2) AS REVENUE,\n  ROUND(SUM(dl.PREV_MONTH_REVENUE), 2) AS PREV_MONTH_REVENUE,\n\
+    \  ROUND(AVG(dl.REVENUE_GROWTH_MOM_PERCENT), 2) AS REVENUE_GROWTH_MOM_PERCENT\nFROM dealer_db.dealer_db.VW_DEALER_REVENUE_GROWTH\
+    \ dl\nGROUP BY dl.DEALER_NAME\nORDER BY dl.DEALER_NAME;"
+- name: dealer_revenue_growth_with_performance
+  question: Show Dealer Revenue Growth with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.REVENUE), 2) AS REVENUE,\n    ROUND(SUM(dl.PREV_MONTH_REVENUE),\
+    \ 2) AS PREV_MONTH_REVENUE,\n    ROUND(AVG(dl.REVENUE_GROWTH_MOM_PERCENT), 2) AS REVENUE_GROWTH_MOM_PERCENT,\n  FROM dealer_db.dealer_db.VW_DEALER_REVENUE_GROWTH\
+    \ dl\n  GROUP BY dl.DEALER_NAME\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n\
+    \    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n\
+    )\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\n\
+    LEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: gross_profit_margin_overview
+  question: Show me gross profit margin. Where are my gross profit margin? Gross Profit Margin overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.TOTAL_REVENUE), 2) AS TOTAL_REVENUE,\n  ROUND(SUM(dl.TOTAL_COGS), 2) AS\
+    \ TOTAL_COGS,\n  ROUND(AVG(dl.GROSS_PROFIT_MARGIN_PCT), 2) AS GROSS_PROFIT_MARGIN_PCT\nFROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\
+    \ dl\nGROUP BY dl.DEALER_NAME\nORDER BY dl.DEALER_NAME;"
+- name: order_lead_time_overview
+  question: Show me order lead time. Where are my order lead time? Order Lead Time overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.AVG_ORDER_LEAD_TIME_DAYS), 2) AS AVG_ORDER_LEAD_TIME_DAYS,\n  ROUND(SUM(dl.ORDERS_COUNT),\
+    \ 2) AS ORDERS_COUNT\nFROM dealer_db.dealer_db.VW_ORDER_LEAD_TIME dl\nGROUP BY dl.DEALER_NAME\nORDER BY dl.DEALER_NAME;"
+- name: order_lead_time_with_performance
+  question: Show Order Lead Time with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.AVG_ORDER_LEAD_TIME_DAYS), 2) AS AVG_ORDER_LEAD_TIME_DAYS,\n\
+    \    ROUND(SUM(dl.ORDERS_COUNT), 2) AS ORDERS_COUNT,\n  FROM dealer_db.dealer_db.VW_ORDER_LEAD_TIME dl\n  GROUP BY dl.DEALER_NAME\n\
+    ),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n    SUM(TOTAL_REVENUE) AS total_revenue\n\
+    \  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n)\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct,\
+    \ ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\nLEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY\
+    \ p.total_revenue DESC NULLS LAST;"
+- name: sales_per_product_category_overview
+  question: Show me sales per product category. Where are my sales per product category? Sales Per Product Category overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  dl.PRODUCT_CATEGORY,\n  ROUND(SUM(dl.TOTAL_REVENUE), 2) AS TOTAL_REVENUE,\n  ROUND(SUM(dl.TOTAL_QUANTITY),\
+    \ 2) AS TOTAL_QUANTITY\nFROM dealer_db.dealer_db.VW_SALES_PER_PRODUCT_CATEGORY dl\nGROUP BY dl.DEALER_NAME, dl.PRODUCT_CATEGORY\n\
+    ORDER BY dl.DEALER_NAME;"
+- name: sales_per_product_category_with_performance
+  question: Show Sales Per Product Category with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    dl.PRODUCT_CATEGORY,\n    ROUND(SUM(dl.TOTAL_REVENUE), 2) AS TOTAL_REVENUE,\n\
+    \    ROUND(SUM(dl.TOTAL_QUANTITY), 2) AS TOTAL_QUANTITY,\n  FROM dealer_db.dealer_db.VW_SALES_PER_PRODUCT_CATEGORY dl\n\
+    \  GROUP BY dl.DEALER_NAME, dl.PRODUCT_CATEGORY\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT)\
+    \ AS avg_margin,\n    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP\
+    \ BY DEALER_NAME\n)\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\n\
+    FROM base b\nLEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: sales_volume_overview
+  question: Show me sales volume. Where are my sales volume? Sales Volume overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  ROUND(SUM(dl.UNITS_SOLD), 2) AS UNITS_SOLD\nFROM dealer_db.dealer_db.VW_SALES_VOLUME\
+    \ dl\nGROUP BY dl.DEALER_NAME\nORDER BY dl.DEALER_NAME;"
+- name: sales_volume_with_performance
+  question: Show Sales Volume with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    ROUND(SUM(dl.UNITS_SOLD), 2) AS UNITS_SOLD,\n  FROM dealer_db.dealer_db.VW_SALES_VOLUME\
+    \ dl\n  GROUP BY dl.DEALER_NAME\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n\
+    \    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n\
+    )\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\n\
+    LEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: stock_availability_dealer_overview
+  question: Show me stock availability dealer. Where are my stock availability dealer? Stock Availability Dealer overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.DEALER_NAME,\n  dl.PRODUCT_CATEGORY,\n  ROUND(SUM(dl.ON_HAND_STOCK), 2) AS ON_HAND_STOCK,\n  ROUND(SUM(dl.RESERVED_STOCK),\
+    \ 2) AS RESERVED_STOCK,\n  ROUND(SUM(dl.TOTAL_DEMAND), 2) AS TOTAL_DEMAND,\n  ROUND(AVG(dl.STOCK_AVAILABILITY_PCT), 2)\
+    \ AS STOCK_AVAILABILITY_PCT\nFROM dealer_db.dealer_db.VW_STOCK_AVAILABILITY_DEALER dl\nGROUP BY dl.DEALER_NAME, dl.PRODUCT_CATEGORY\n\
+    ORDER BY dl.DEALER_NAME;"
+- name: stock_availability_dealer_with_performance
+  question: Show Stock Availability Dealer with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.DEALER_NAME,\n    dl.PRODUCT_CATEGORY,\n    ROUND(SUM(dl.ON_HAND_STOCK), 2) AS ON_HAND_STOCK,\n\
+    \    ROUND(SUM(dl.RESERVED_STOCK), 2) AS RESERVED_STOCK,\n    ROUND(SUM(dl.TOTAL_DEMAND), 2) AS TOTAL_DEMAND,\n    ROUND(AVG(dl.STOCK_AVAILABILITY_PCT),\
+    \ 2) AS STOCK_AVAILABILITY_PCT,\n  FROM dealer_db.dealer_db.VW_STOCK_AVAILABILITY_DEALER dl\n  GROUP BY dl.DEALER_NAME,\
+    \ dl.PRODUCT_CATEGORY\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n    SUM(TOTAL_REVENUE)\
+    \ AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n)\nSELECT b.*, ROUND(p.avg_margin,2)\
+    \ AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\nLEFT JOIN perf p ON b.DEALER_NAME =\
+    \ p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+- name: transaction_lineage_overview
+  question: Show me transaction lineage. Where are my transaction lineage? Transaction Lineage overview.
+  use_as_onboarding_question: true
+  sql: "SELECT\n  dl.TRANSACTION_ID,\n  dl.DEALER_NAME,\n  dl.PRODUCT_CATEGORY,\n  dl.PRODUCT_DESC,\n  dl.ORDER_FLAG,\n  dl.DELIVERY_FLAG,\n\
+    \  dl.INVOICE_FLAG,\n  dl.PAID_FLAG,\n  dl.INVOICE_STATUS,\n  dl.WARRANTY_FLAG,\n  dl.WARRANTY_STATUS,\n  ROUND(SUM(dl.LEAD_TIME_DAYS),\
+    \ 2) AS LEAD_TIME_DAYS,\n  ROUND(SUM(dl.INVOICE_AMOUNT), 2) AS INVOICE_AMOUNT\nFROM dealer_db.dealer_db.VW_TRANSACTION_LINEAGE\
+    \ dl\nGROUP BY dl.TRANSACTION_ID, dl.DEALER_NAME, dl.PRODUCT_CATEGORY, dl.PRODUCT_DESC, dl.ORDER_FLAG, dl.DELIVERY_FLAG,\
+    \ dl.INVOICE_FLAG, dl.PAID_FLAG, dl.INVOICE_STATUS, dl.WARRANTY_FLAG, dl.WARRANTY_STATUS\nORDER BY dl.TRANSACTION_ID;"
+- name: transaction_lineage_with_performance
+  question: Show Transaction Lineage with dealer performance.
+  sql: "WITH base AS (\n  SELECT\n    dl.TRANSACTION_ID,\n    dl.DEALER_NAME,\n    dl.PRODUCT_CATEGORY,\n    dl.PRODUCT_DESC,\n\
+    \    dl.ORDER_FLAG,\n    dl.DELIVERY_FLAG,\n    dl.INVOICE_FLAG,\n    dl.PAID_FLAG,\n    dl.INVOICE_STATUS,\n    dl.WARRANTY_FLAG,\n\
+    \    dl.WARRANTY_STATUS,\n    ROUND(SUM(dl.LEAD_TIME_DAYS), 2) AS LEAD_TIME_DAYS,\n    ROUND(SUM(dl.INVOICE_AMOUNT), 2)\
+    \ AS INVOICE_AMOUNT,\n  FROM dealer_db.dealer_db.VW_TRANSACTION_LINEAGE dl\n  GROUP BY dl.TRANSACTION_ID, dl.DEALER_NAME,\
+    \ dl.PRODUCT_CATEGORY, dl.PRODUCT_DESC, dl.ORDER_FLAG, dl.DELIVERY_FLAG, dl.INVOICE_FLAG, dl.PAID_FLAG, dl.INVOICE_STATUS,\
+    \ dl.WARRANTY_FLAG, dl.WARRANTY_STATUS\n),\nperf AS (\n  SELECT DEALER_NAME,\n    AVG(GROSS_PROFIT_MARGIN_PCT) AS avg_margin,\n\
+    \    SUM(TOTAL_REVENUE) AS total_revenue\n  FROM dealer_db.dealer_db.VW_GROSS_PROFIT_MARGIN\n  GROUP BY DEALER_NAME\n\
+    )\nSELECT b.*, ROUND(p.avg_margin,2) AS avg_gross_margin_pct, ROUND(p.total_revenue,0) AS total_revenue\nFROM base b\n\
+    LEFT JOIN perf p ON b.DEALER_NAME = p.DEALER_NAME\nORDER BY p.total_revenue DESC NULLS LAST;"
+cortex_optimization:
+  cortex_training_patterns:
+    priority_9_auto_generated:
+    - id: p9_average_repair_turnaround_time
+      priority: 9
+      trigger: &id002
+      - average repair turnaround time
+      - show average repair turnaround time
+      - repair
+      - turnaround
+      - time
+      pre_built_query: average_repair_turnaround_time_overview
+      description: Auto-generated fast path for Average Repair Turnaround Time.
+    - id: p9_backorder_incidence
+      priority: 9
+      trigger: &id003
+      - backorder incidence
+      - show backorder incidence
+      - backorder
+      - incidence
+      pre_built_query: backorder_incidence_overview
+      description: Auto-generated fast path for Backorder Incidence.
+    - id: p9_cash_conversion_cycle
+      priority: 9
+      trigger: &id004
+      - cash conversion cycle
+      - show cash conversion cycle
+      - cash
+      - conversion
+      - cycle
+      pre_built_query: cash_conversion_cycle_overview
+      description: Auto-generated fast path for Cash Conversion Cycle.
+    - id: p9_dealer_contribution_margin
+      priority: 9
+      trigger: &id005
+      - dealer contribution margin
+      - show dealer contribution margin
+      - contribution
+      - margin
+      pre_built_query: dealer_contribution_margin_overview
+      description: Auto-generated fast path for Dealer Contribution Margin.
+    - id: p9_dealer_journey_counts
+      priority: 9
+      trigger: &id006
+      - dealer journey counts
+      - show dealer journey counts
+      - journey
+      - counts
+      pre_built_query: dealer_journey_counts_overview
+      description: Auto-generated fast path for Dealer Journey Counts.
+    - id: p9_dealer_revenue_growth
+      priority: 9
+      trigger: &id007
+      - dealer revenue growth
+      - show dealer revenue growth
+      - revenue
+      - growth
+      pre_built_query: dealer_revenue_growth_overview
+      description: Auto-generated fast path for Dealer Revenue Growth.
+    - id: p9_gross_profit_margin
+      priority: 9
+      trigger: &id008
+      - gross profit margin
+      - show gross profit margin
+      - gross
+      - profit
+      - margin
+      pre_built_query: gross_profit_margin_overview
+      description: Auto-generated fast path for Gross Profit Margin.
+    - id: p9_order_lead_time
+      priority: 9
+      trigger: &id009
+      - order lead time
+      - show order lead time
+      - order
+      - lead
+      - time
+      pre_built_query: order_lead_time_overview
+      description: Auto-generated fast path for Order Lead Time.
+    - id: p9_sales_per_product_category
+      priority: 9
+      trigger: &id010
+      - sales per product category
+      - show sales per product category
+      - sales
+      - product
+      - category
+      pre_built_query: sales_per_product_category_overview
+      description: Auto-generated fast path for Sales Per Product Category.
+    - id: p9_sales_volume
+      priority: 9
+      trigger: &id011
+      - sales volume
+      - show sales volume
+      - sales
+      - volume
+      pre_built_query: sales_volume_overview
+      description: Auto-generated fast path for Sales Volume.
+    - id: p9_stock_availability_dealer
+      priority: 9
+      trigger: &id012
+      - stock availability dealer
+      - show stock availability dealer
+      - stock
+      - availability
+      pre_built_query: stock_availability_dealer_overview
+      description: Auto-generated fast path for Stock Availability Dealer.
+    - id: p9_transaction_lineage
+      priority: 9
+      trigger: &id013
+      - transaction lineage
+      - show transaction lineage
+      - transaction
+      - lineage
+      pre_built_query: transaction_lineage_overview
+      description: Auto-generated fast path for Transaction Lineage.
+semantic_matching_integration:
+  expert_sql_attributes:
+  - 'Know average repair turnaround time: VW_AVERAGE_REPAIR_TURNAROUND_TIME (DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE,
+    AVG_TURNAROUND_HOURS, SERVICE_ORDERS_COUNT)'
+  - 'Know backorder incidence: VW_BACKORDER_INCIDENCE (DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, BACKORDER_INCIDENCE_PCT,
+    TOTAL_ORDER_ITEMS, BACKORDERED_ITEMS)'
+  - 'Know cash conversion cycle: VW_CASH_CONVERSION_CYCLE (DEALER_NAME, PERIOD_MONTH, PERIOD_YEAR, DSO, DIO, DPO, CCC)'
+  - 'Know dealer contribution margin: VW_DEALER_CONTRIBUTION_MARGIN (DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE,
+    REVENUE_AMT, DIRECT_COSTS_AMT, ALLOCATED_COSTS_AMT, CONTRIBUTION_MARGIN_PCT)'
+  - 'Know dealer journey counts: VW_DEALER_JOURNEY_COUNTS (DEALER_NAME, ORDER_DATE, TOTAL_ORDERS, ORDER_COUNT, DELIVERY_COUNT,
+    INVOICE_COUNT, PAID_COUNT, WARRANTY_COUNT, AVG_LEAD_TIME_DAYS, ACTIVE_WARRANTY_COUNT, EXPIRED_WARRANTY_COUNT)'
+  - 'Know dealer revenue growth: VW_DEALER_REVENUE_GROWTH (DEALER_NAME, PERIOD_MONTH, PERIOD_YEAR, REVENUE, PREV_MONTH_REVENUE,
+    REVENUE_GROWTH_MOM_PERCENT)'
+  - 'Know gross profit margin: VW_GROSS_PROFIT_MARGIN (DEALER_NAME, PERIOD_MONTH, PERIOD_YEAR, TOTAL_REVENUE, TOTAL_COGS,
+    GROSS_PROFIT_MARGIN_PCT)'
+  - 'Know order lead time: VW_ORDER_LEAD_TIME (DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, AVG_ORDER_LEAD_TIME_DAYS,
+    ORDERS_COUNT)'
+  - 'Know sales per product category: VW_SALES_PER_PRODUCT_CATEGORY (DEALER_NAME, PRODUCT_CATEGORY, PERIOD_YEAR, PERIOD_MONTH,
+    PERIOD_START_DATE, TOTAL_REVENUE, TOTAL_QUANTITY)'
+  - 'Know sales volume: VW_SALES_VOLUME (DEALER_NAME, PERIOD_YEAR, PERIOD_MONTH, PERIOD_START_DATE, UNITS_SOLD)'
+  - 'Know stock availability dealer: VW_STOCK_AVAILABILITY_DEALER (DEALER_NAME, PRODUCT_CATEGORY, PERIOD_YEAR, PERIOD_MONTH,
+    PERIOD_START_DATE, ON_HAND_STOCK, RESERVED_STOCK, TOTAL_DEMAND, STOCK_AVAILABILITY_PCT)'
+  - 'Know transaction lineage: VW_TRANSACTION_LINEAGE (TRANSACTION_ID, ORDER_DATE, DEALER_NAME, PRODUCT_CATEGORY, PRODUCT_DESC,
+    ORDER_FLAG, DELIVERY_DATE, DELIVERY_FLAG, LEAD_TIME_DAYS, INVOICE_DATE, INVOICE_FLAG, PAYMENT_DATE, PAID_FLAG, INVOICE_AMOUNT,
+    INVOICE_STATUS, WARRANTY_FLAG, WARRANTY_END_DATE, WARRANTY_STATUS)'
+table_join_matrix:
+  join_rules:
+  - primary_table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+    alias: dl
+    description: Auto-generated join rules for Average Repair Turnaround Time.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_BACKORDER_INCIDENCE
+    alias: dl
+    description: Auto-generated join rules for Backorder Incidence.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_CASH_CONVERSION_CYCLE
+    alias: dl
+    description: Auto-generated join rules for Cash Conversion Cycle.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_DEALER_CONTRIBUTION_MARGIN
+    alias: dl
+    description: Auto-generated join rules for Dealer Contribution Margin.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_DEALER_JOURNEY_COUNTS
+    alias: dl
+    description: Auto-generated join rules for Dealer Journey Counts.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_DEALER_REVENUE_GROWTH
+    alias: dl
+    description: Auto-generated join rules for Dealer Revenue Growth.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_GROSS_PROFIT_MARGIN
+    alias: dl
+    description: Auto-generated join rules for Gross Profit Margin.
+    joinable_to:
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_ORDER_LEAD_TIME
+    alias: dl
+    description: Auto-generated join rules for Order Lead Time.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_SALES_PER_PRODUCT_CATEGORY
+    alias: dl
+    description: Auto-generated join rules for Sales Per Product Category.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_SALES_VOLUME
+    alias: dl
+    description: Auto-generated join rules for Sales Volume.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+  - primary_table: VW_STOCK_AVAILABILITY_DEALER
+    alias: dl
+    description: Auto-generated join rules for Stock Availability Dealer.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+  - primary_table: VW_TRANSACTION_LINEAGE
+    alias: dl
+    description: Auto-generated join rules for Transaction Lineage.
+    joinable_to:
+    - table: VW_GROSS_PROFIT_MARGIN
+      alias: m
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = m.DEALER_NAME
+    - table: VW_DEALER_REVENUE_GROWTH
+      alias: r
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = r.DEALER_NAME
+    - table: VW_CASH_CONVERSION_CYCLE
+      alias: c
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = c.DEALER_NAME
+    - table: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+      alias: t
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = t.DEALER_NAME
+    - table: VW_DEALER_CONTRIBUTION_MARGIN
+      alias: cm
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = cm.DEALER_NAME
+    - table: VW_SALES_VOLUME
+      alias: v
+      join_key: DEALER_NAME
+      join_type: LEFT JOIN
+      on_clause: ON dl.DEALER_NAME = v.DEALER_NAME
+auto_verified_queries:
+- query_name: average_repair_turnaround_time_overview
+  view: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+  keywords: *id002
+  description: Auto-generated for Average Repair Turnaround Time.
+- query_name: average_repair_turnaround_time_with_performance
+  view: VW_AVERAGE_REPAIR_TURNAROUND_TIME
+  keywords:
+  - average repair turnaround time
+  - show average repair turnaround time
+  - repair
+  - turnaround
+  - time
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Average Repair Turnaround Time.
+- query_name: backorder_incidence_overview
+  view: VW_BACKORDER_INCIDENCE
+  keywords: *id003
+  description: Auto-generated for Backorder Incidence.
+- query_name: backorder_incidence_with_performance
+  view: VW_BACKORDER_INCIDENCE
+  keywords:
+  - backorder incidence
+  - show backorder incidence
+  - backorder
+  - incidence
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Backorder Incidence.
+- query_name: cash_conversion_cycle_overview
+  view: VW_CASH_CONVERSION_CYCLE
+  keywords: *id004
+  description: Auto-generated for Cash Conversion Cycle.
+- query_name: cash_conversion_cycle_with_performance
+  view: VW_CASH_CONVERSION_CYCLE
+  keywords:
+  - cash conversion cycle
+  - show cash conversion cycle
+  - cash
+  - conversion
+  - cycle
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Cash Conversion Cycle.
+- query_name: dealer_contribution_margin_overview
+  view: VW_DEALER_CONTRIBUTION_MARGIN
+  keywords: *id005
+  description: Auto-generated for Dealer Contribution Margin.
+- query_name: dealer_contribution_margin_with_performance
+  view: VW_DEALER_CONTRIBUTION_MARGIN
+  keywords:
+  - dealer contribution margin
+  - show dealer contribution margin
+  - contribution
+  - margin
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Dealer Contribution Margin.
+- query_name: dealer_journey_counts_overview
+  view: VW_DEALER_JOURNEY_COUNTS
+  keywords: *id006
+  description: Auto-generated for Dealer Journey Counts.
+- query_name: dealer_journey_counts_with_performance
+  view: VW_DEALER_JOURNEY_COUNTS
+  keywords:
+  - dealer journey counts
+  - show dealer journey counts
+  - journey
+  - counts
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Dealer Journey Counts.
+- query_name: dealer_revenue_growth_overview
+  view: VW_DEALER_REVENUE_GROWTH
+  keywords: *id007
+  description: Auto-generated for Dealer Revenue Growth.
+- query_name: dealer_revenue_growth_with_performance
+  view: VW_DEALER_REVENUE_GROWTH
+  keywords:
+  - dealer revenue growth
+  - show dealer revenue growth
+  - revenue
+  - growth
+  - performance
+  - profit
+  - compare
+  description: Cross-metric for Dealer Revenue Growth.
+- query_name: gross_profit_margin_overview
+  view: VW_GROSS_PROFIT_MARGIN
+  keywords: *id008
+  description: Auto-generated for Gross Profit Margin.
+- query_name: order_lead_time_overview
+  view: VW_ORDER_LEAD_TIME
+  keywords: *id009
+  description: Auto-generated for Order Lead Time.
+- query_name: order_lead_time_with_performance
+  view: VW_ORDER_LEAD_TIME
+  keywords:
+  - order lead time
+  - show order lead time
+  - order
+  - lead
+  - time
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Order Lead Time.
+- query_name: sales_per_product_category_overview
+  view: VW_SALES_PER_PRODUCT_CATEGORY
+  keywords: *id010
+  description: Auto-generated for Sales Per Product Category.
+- query_name: sales_per_product_category_with_performance
+  view: VW_SALES_PER_PRODUCT_CATEGORY
+  keywords:
+  - sales per product category
+  - show sales per product category
+  - sales
+  - product
+  - category
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Sales Per Product Category.
+- query_name: sales_volume_overview
+  view: VW_SALES_VOLUME
+  keywords: *id011
+  description: Auto-generated for Sales Volume.
+- query_name: sales_volume_with_performance
+  view: VW_SALES_VOLUME
+  keywords:
+  - sales volume
+  - show sales volume
+  - sales
+  - volume
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Sales Volume.
+- query_name: stock_availability_dealer_overview
+  view: VW_STOCK_AVAILABILITY_DEALER
+  keywords: *id012
+  description: Auto-generated for Stock Availability Dealer.
+- query_name: stock_availability_dealer_with_performance
+  view: VW_STOCK_AVAILABILITY_DEALER
+  keywords:
+  - stock availability dealer
+  - show stock availability dealer
+  - stock
+  - availability
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Stock Availability Dealer.
+- query_name: transaction_lineage_overview
+  view: VW_TRANSACTION_LINEAGE
+  keywords: *id013
+  description: Auto-generated for Transaction Lineage.
+- query_name: transaction_lineage_with_performance
+  view: VW_TRANSACTION_LINEAGE
+  keywords:
+  - transaction lineage
+  - show transaction lineage
+  - transaction
+  - lineage
+  - performance
+  - revenue
+  - profit
+  - compare
+  description: Cross-metric for Transaction Lineage.

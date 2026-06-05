@@ -1,0 +1,87 @@
+app:
+  page_title: "Dealers Dashboard"
+  page_icon: "📊"
+  layout: "wide"
+  initial_sidebar_state: "collapsed"
+  title: "DealerPulse"
+  subtitle: "Dealer Performance Analytics"
+
+theme:
+  colors:
+    primary: "#2563eb"
+    primary_dark: "#1e40af"
+    secondary: "#06b6d4"
+    success: "#10b981"
+    warning: "#f59e0b"
+    danger: "#ef4444"
+    neutral: "#8b5cf6"
+    accent: "#3b82f6"
+    accent_light: "#3b8beb"
+    grid: "#e5e7eb"
+    text_primary: "#111827"
+    text_muted: "#6b7280"
+    text_dark: "#222222"
+    background: "#fbf4f9"
+    border: "#eef2f6"
+    surface: "#ffffff"
+    surface_light: "#f5f5f5"
+    surface_lighter: "#f3f4f6"
+    surface_hover: "#eff6ff"
+    hover_shadow_color: "37, 99, 235"
+    hover_shadow_opacity: "0.3"
+    insight_bg: "#f3e8ff"
+    insight_border: "#7c3aed"
+    badge_success: "#d1fae5"
+    badge_success_text: "#065f46"
+    badge_danger: "#fee2e2"
+    badge_danger_text: "#7f1d1d"
+  fonts:
+    family: "Poppins, Inter, Segoe UI, sans-serif"
+    size_large: 24
+    size_title: 18
+    size_normal: 14
+    size_small: 12
+    weight_bold: 700
+    weight_semi_bold: 600
+    weight_normal: 400
+
+buttons:
+  primary:
+    bg_color: "#2563eb"
+    bg_color_hover: "#1e40af"
+    text_color: "#ffffff"
+    text_color_hover: "#ffffff"
+    border_color: "#2563eb"
+    border_width: "0px"
+  secondary:
+    bg_color: "#ffffff"
+    bg_color_hover: "#eff6ff"
+    text_color: "#222222"
+    text_color_hover: "#1e40af"
+    border_color: "#eef2f6"
+    border_color_hover: "#2563eb"
+    border_width: "1px"
+  sizing:
+    padding_vertical: "10px"
+    padding_horizontal: "20px"
+    border_radius: "25px"
+    min_height: "auto"
+  styling:
+    font_weight: 600
+    font_size: 14
+    transition_duration: "0.3s"
+    transition_timing: "ease"
+    box_shadow: "none"
+    box_shadow_hover: "0 4px 12px rgba(139, 92, 246, 0.3)"
+
+filters:
+  default_time_period: "Last 30 Days"
+
+kpi_metrics:
+  enabled: true
+  items_per_row: 5
+  rows: 2
+
+sections:
+  strategic_insights:
+    enabled: true

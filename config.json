@@ -1,0 +1,36 @@
+{
+  "aws": {
+    "region": "us-east-1",
+    "secrets_manager_key": "dealer-pulse/app-config"
+  },
+
+  "athena": {
+    "database":             "dealer_db",
+    "workgroup":            "primary",
+    "s3_output":            "s3://yignite-dealerpulse-miniature/query_results/",
+    "poll_interval_seconds": 2,
+    "poll_max_wait_seconds": 60
+  },
+
+  "bedrock": {
+    "primary_model":  "us.meta.llama3-3-70b-instruct-v1:0",
+    "model_llama8b":  "us.meta.llama3-1-8b-instruct-v1:0",
+    "model_llama70b": "us.meta.llama3-3-70b-instruct-v1:0",
+    "model_mistral7b":"us.meta.llama3-1-70b-instruct-v1:0",
+    "max_tokens":     2048,
+    "temperature":    0.1
+  },
+
+  "s3": {
+    "bucket":        "yignite-dealerpulse-miniature",
+    "config_prefix": "config/",
+    "yaml_filename": "dealer_model.yml"
+  },
+
+  "dynamodb": {
+    "cache_table":        "dealer_genie_query_cache",
+    "sessions_table":     "dealer_genie_chat_sessions",
+    "cache_ttl_seconds":  86400,
+    "session_ttl_days":   3
+  }
+}

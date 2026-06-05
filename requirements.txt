@@ -1,0 +1,23 @@
+# DealerPulse AWS — Python dependencies
+# Migration note: snowflake-connector-python and snowflake-snowpark-python removed
+
+# ── AWS SDK ──────────────────────────────────────────────────────────────────
+boto3>=1.34.0
+botocore>=1.34.0
+
+# ── Streamlit UI ─────────────────────────────────────────────────────────────
+streamlit>=1.32.0
+
+# ── Data / numerics ──────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.26.0
+
+# ── Visualisation ────────────────────────────────────────────────────────────
+plotly>=5.20.0
+
+# ── Machine learning (IsolationForest, StandardScaler) ───────────────────────
+scikit-learn>=1.4.0
+
+# ── Configuration / serialisation ────────────────────────────────────────────
+PyYAML>=6.0.0
+python-dateutil>=2.8.2
