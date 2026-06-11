@@ -4291,16 +4291,11 @@ def run_quick_analysis(analysis_key: str):
                 data_summary += f"\n... and {len(vendors_df) - 5} more rows"
 
             cortex_prompt = f"""Analyze this dealer question based on the data:
-
 Question: {query_text.strip()}
 Data: {data_summary}
-
-Respond with THREE sections (ONLY these headers and content, no extra text):
-
+Respond with THREE sections (ONLY these headers and content, no extra text or no extra code):
 **Descriptive** - What the data shows (2-3 sentences with key numbers)
-
 **Prescriptive** - Recommendations (5-7 bullet points starting with •)
-
 **Predictive** - Expected Impact in 12-24 months (1-2 sentences with outcomes)"""
 
             t_text = time_module.time()
