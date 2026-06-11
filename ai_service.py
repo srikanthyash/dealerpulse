@@ -1310,8 +1310,8 @@ def _clean_llm_response(text: str) -> str:
     # Strip $\boxed{...} LaTeX constructs (may contain multiline content)
     text = re.sub(r"\$\\boxed\{.*?\}", "", text, flags=re.DOTALL)
     text = re.sub(r"\$\\boxed\{\s*\}", "", text)
-    # Strip "The final answer is:" and everything that follows
-    text = re.sub(r"\n*The final answer is:.*$", "", text, flags=re.DOTALL | re.IGNORECASE)
+    # Strip "The final answer is:" lines only (do not strip content after them)
+    text = re.sub(r"\n*The final answer is:[^\n]*", "", text, flags=re.IGNORECASE)
     # Strip Llama meta-commentary lines about formatting/instructions
     text = re.sub(
         r"^.*\b(I will remove|as per the instructions|according to the instructions|"
@@ -1523,7 +1523,8 @@ def call_bedrock_analyst(  # Migration note: call_cortex_analyst → call_bedroc
                         f"**Prescriptive** - Recommendations & Actions\n"
                         f"5-7 bullet points starting with •\n\n"
                         f"**Predictive** - Expected Impact (12-24 months)\n"
-                        f"Financial outcomes and improvements."
+                        f"Financial outcomes and improvements.\n\n"
+                        f"Use plain text only. Do NOT use LaTeX, $\\boxed{{...}}, or any math notation."
                     )
                     # Migration note: bedrock_complete replaces SNOWFLAKE.CORTEX.COMPLETE (line 8391-8395)
                     text_summary = _clean_llm_response(bedrock_complete(bedrock_prompt, model_id=bedrock_model))
@@ -1563,7 +1564,8 @@ def call_bedrock_analyst(  # Migration note: call_cortex_analyst → call_bedroc
             f"Format as:\n\n"
             f"**Descriptive** - Direct answer with specific values\n\n"
             f"**Prescriptive** - 3-5 action bullets starting with •\n\n"
-            f"**Predictive** - Expected outcome (1-2 sentences)"
+            f"**Predictive** - Expected outcome (1-2 sentences)\n\n"
+            f"Use plain text only. Do NOT use LaTeX, $\\boxed{{...}}, or any math notation."
         )
         try:
             # Migration note: bedrock_complete replaces SNOWFLAKE.CORTEX.COMPLETE (line 8446-8451)
@@ -1618,7 +1620,8 @@ def call_bedrock_analyst(  # Migration note: call_cortex_analyst → call_bedroc
                         f"Respond with THREE sections (ONLY these headers):\n\n"
                         f"**Descriptive** - What the data shows (2-3 sentences)\n\n"
                         f"**Prescriptive** - Recommendations (5-7 bullets with •)\n\n"
-                        f"**Predictive** - Expected Impact 12-24 months (1-2 sentences)"
+                        f"**Predictive** - Expected Impact 12-24 months (1-2 sentences)\n\n"
+                        f"Use plain text only. Do NOT use LaTeX, $\\boxed{{...}}, or any math notation."
                     )
                     # Migration note: bedrock_complete replaces SNOWFLAKE.CORTEX.COMPLETE (line 8515-8519)
                     text_summary = _clean_llm_response(bedrock_complete(bedrock_prompt, model_id=bedrock_model))
@@ -1674,7 +1677,8 @@ def call_bedrock_analyst(  # Migration note: call_cortex_analyst → call_bedroc
         f"**Prescriptive** - Recommendations & Actions\n"
         f"5-7 bullet points starting with •\n\n"
         f"**Predictive** - Expected Impact (12-24 months)\n"
-        f"Financial outcomes and timeline."
+        f"Financial outcomes and timeline.\n\n"
+        f"Use plain text only. Do NOT use LaTeX, $\\boxed{{...}}, or any math notation."
     )
     try:
         # Migration note: bedrock_complete replaces SNOWFLAKE.CORTEX.COMPLETE (line 8583-8588)

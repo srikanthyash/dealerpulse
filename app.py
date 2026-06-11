@@ -43,6 +43,7 @@ from ai_service import (
     _get_dynamic_intents,
     _get_dynamic_entity_patterns,
     _get_dynamic_keyword_tables,
+    _clean_llm_response,
     RouteResult,
 )
 from utils import DynamoQueryCache, DynamoChatPersistence
@@ -4535,7 +4536,7 @@ def render_genie_page():
     _TRUCK_SVG = """<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M1 6h14v10H1z" stroke="white" stroke-width="1.5" fill="none"/><path d="M15 8h6l2 4v4h-8v-8z" stroke="white" stroke-width="1.5" fill="none"/><circle cx="5" cy="19" r="2" stroke="white" stroke-width="1.5" fill="none"/><circle cx="18" cy="19" r="2" stroke="white" stroke-width="1.5" fill="none"/></svg>"""
 
     QUICK_ANALYSES = {
-        "cash_cycle":         {"title": "Cash Conversion Cycle",       "icon_svg": _CASH_SVG,  "desc": "Track CCC trends and inventory efficiency",                   "question": "Show cash conversion cycle analysis"},
+        "cash_cycle":         {"title": "Cash Conversion Cycle",       "icon_svg": _CASH_SVG,  "desc": "Track real-time CCC trends and inventory efficiency metrics.",                   "question": "Show cash conversion cycle analysis"},
         "service_turnaround": {"title": "Service Turnaround Analysis", "icon_svg": _CLOCK_SVG, "desc": "Review repair turnaround times and service efficiency",        "question": "What is the average repair turnaround time?"},
         "inventory_health":   {"title": "Inventory & Stock Health",    "icon_svg": _BOX_SVG,   "desc": "Monitor stock availability, backorders, and inventory", "question": "Show inventory metrics and stock availability by dealer."},
         "order_fulfillment":  {"title": "Order Lead Time Analysis",    "icon_svg": _TRUCK_SVG, "desc": "Analyze delivery performance and lead time trends",            "question": "What is the average order lead time?"},
@@ -4672,9 +4673,12 @@ Data: {data_summary}
 Respond with THREE sections (ONLY these headers, no extra text):
 **Descriptive** - What the data shows (2-3 sentences with key numbers)
 **Prescriptive** - Recommendations (5-7 bullet points starting with •)
-**Predictive** - Expected Impact in 12-24 months (1-2 sentences)"""
+**Predictive** - Expected Impact in 12-24 months (1-2 sentences)
+IMPORTANT: Use plain text only. Do NOT use LaTeX, $\\boxed{{...}}, or any math notation."""
                 # Migration note: get_snowflake_connection() + session.sql(CORTEX.COMPLETE) → bedrock_complete()
-                text_summary = bedrock_complete(cortex_prompt, model_id=get_config()["bedrock"]["primary_model"]) or ""
+                text_summary = _clean_llm_response(
+                    bedrock_complete(cortex_prompt, model_id=get_config()["bedrock"]["primary_model"]) or ""
+                )
                 response["text_summary"] = text_summary
             except Exception as e:
                 print(f"[TEXT GEN] {str(e)[:100]}")
@@ -5958,8 +5962,8 @@ def render_transaction_lineage(filters=None):
 
         styled = (
             display_df.style
-            .applymap(_color_yn, subset=stage_cols)
-            .applymap(_color_invoice_status, subset=['Invoice Status'] if 'Invoice Status' in display_df.columns else [])
+            .map(_color_yn, subset=stage_cols)
+            .map(_color_invoice_status, subset=['Invoice Status'] if 'Invoice Status' in display_df.columns else [])
             .set_table_styles([
                 {'selector': 'thead th',
                  'props': [('background-color', '#f8fafc'), ('color', '#374151'),
@@ -7954,7 +7958,7 @@ _AGENT_CATALOG = [
     {
         "id":         "revenue_recovery",
         "name":       "Revenue Recovery Agent",
-        "subtitle":   "Identify high-risk dealers by revenue loss, diagnose margin and product mix issues, and generate AI recovery plans.",
+        "subtitle":   "Identify high-risk dealers by revenue loss, diagnose margin and product mix issues, and generate actionable AI-powered dealer recovery plans.",
         "icon":       "📉",
         "icon_class": "agent-card-icon-recovery",
         "card_class": "agent-card-recovery",
@@ -8610,8 +8614,8 @@ def render_replenishment_agent():
 
         styled_po = (
             po_df.style
-            .applymap(_style_po_status, subset=['Status'])
-            .applymap(_style_risk,      subset=['Risk'])
+            .map(_style_po_status, subset=['Status'])
+            .map(_style_risk,      subset=['Risk'])
             .set_table_styles([
                 {'selector': 'thead th',
                  'props': [('background', '#f8fafc'), ('color', '#374151'),
@@ -9109,7 +9113,7 @@ def render_delivery_tracking_agent():
         }
         styled_log = (
             log_df.style
-            .applymap(lambda v: action_styles.get(str(v),''), subset=['Action'])
+            .map(lambda v: action_styles.get(str(v),''), subset=['Action'])
             .set_table_styles([
                 {'selector': 'thead th',
                  'props': [('background','#1e293b'),('color','#e2e8f0'),

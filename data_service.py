@@ -697,18 +697,28 @@ def fetch_transaction_lineage(filters=None, page: int = None, page_size: int = 1
         where += lineage_filter_clause(filters)
         offset = (page - 1) * page_size
 
+        # Migration note: Athena v2 (Presto) does not support LIMIT n OFFSET m.
+        # Use ROW_NUMBER() subquery for pagination instead.
         df = athena_query(f"""
             SELECT
                 TRANSACTION_ID, DEALER_NAME, PRODUCT_CATEGORY, PRODUCT_DESC,
-                ORDER_DATE, ORDER_FLAG AS ORDER_DONE,
-                DELIVERY_DATE, DELIVERY_FLAG AS DELIVERY_DONE,
-                LEAD_TIME_DAYS, INVOICE_DATE, INVOICE_FLAG AS INVOICE_DONE,
+                ORDER_DATE, ORDER_DONE, DELIVERY_DATE, DELIVERY_DONE,
+                LEAD_TIME_DAYS, INVOICE_DATE, INVOICE_DONE,
                 PAYMENT_DATE, INVOICE_AMOUNT, INVOICE_STATUS,
                 WARRANTY_END_DATE, WARRANTY_STATUS
-            FROM {_DB}.VW_TRANSACTION_LINEAGE
-            {where}
-            ORDER BY ORDER_DATE DESC
-            LIMIT {page_size} OFFSET {offset}
+            FROM (
+                SELECT
+                    TRANSACTION_ID, DEALER_NAME, PRODUCT_CATEGORY, PRODUCT_DESC,
+                    ORDER_DATE, ORDER_FLAG AS ORDER_DONE,
+                    DELIVERY_DATE, DELIVERY_FLAG AS DELIVERY_DONE,
+                    LEAD_TIME_DAYS, INVOICE_DATE, INVOICE_FLAG AS INVOICE_DONE,
+                    PAYMENT_DATE, INVOICE_AMOUNT, INVOICE_STATUS,
+                    WARRANTY_END_DATE, WARRANTY_STATUS,
+                    ROW_NUMBER() OVER (ORDER BY ORDER_DATE DESC) AS _rn
+                FROM {_DB}.VW_TRANSACTION_LINEAGE
+                {where}
+            )
+            WHERE _rn BETWEEN {offset + 1} AND {offset + page_size}
         """)
         if "LEAD_TIME_DAYS" in df.columns:
             df["LEAD_TIME_DAYS"] = df["LEAD_TIME_DAYS"].round().astype("Int64")
@@ -747,7 +757,7 @@ def fetch_products() -> List[str]:
     """Migration note: _session removed. Source line 4744."""
     _default = ["Sedan", "SUV", "Hatchback", "Truck", "MUV", "Commercial", "EV"]
     try:
-        result = athena_query("""
+        result = athena_query(f"""
             SELECT DISTINCT PRODUCT_CATEGORY FROM {_DB}.VW_SALES_PER_PRODUCT_CATEGORY
             WHERE PRODUCT_CATEGORY IS NOT NULL ORDER BY PRODUCT_CATEGORY
         """)
@@ -873,7 +883,7 @@ def fetch_revenue_trend() -> pd.DataFrame:
 def fetch_profit_margin_by_dealer() -> pd.DataFrame:
     """Migration note: _session removed. Source line 6384."""
     try:
-        result = athena_query("""
+        result = athena_query(f"""
             SELECT DEALER_NAME,
                    AVG(GROSS_PROFIT_MARGIN_PCT) AS GROSS_PROFIT_MARGIN_PCT,
                    SUM(TOTAL_REVENUE) AS TOTAL_REVENUE
@@ -926,7 +936,7 @@ def fetch_cash_conversion_cycle_trend() -> pd.DataFrame:
 def fetch_order_lead_time_distribution() -> pd.DataFrame:
     """Migration note: _session removed. Source line 6451."""
     try:
-        result = athena_query("""
+        result = athena_query(f"""
             SELECT DEALER_NAME,
                    AVG(AVG_ORDER_LEAD_TIME_DAYS) AS avg_lead_time,
                    COUNT(*) AS order_count
